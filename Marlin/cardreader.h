@@ -27,8 +27,6 @@
 
 #if ENABLED(SDSUPPORT)
 
-#define SD_RESORT ENABLED(SDCARD_SORT_ALPHA) && ENABLED(SDSORT_DYNAMIC_RAM)
-
 #define MAX_DIR_DEPTH 10          // Maximum folder depth
 
 #include "SdFile.h"
@@ -54,11 +52,7 @@ public:
   void release();
   void openAndPrintFile(const char *name);
   void startFileprint();
-  void stopSDPrint(
-    #if SD_RESORT
-      const bool re_sort=false
-    #endif
-  );
+  void stopSDPrint();
   void getStatus();
   void printingHasFinished();
 
@@ -96,19 +90,10 @@ public:
   FORCE_INLINE uint8_t percentDone() { return (isFileOpen() && filesize) ? sdpos / ((filesize + 99) / 100) : 0; }
   FORCE_INLINE char* getWorkDirName() { workDir.getFilename(filename); return filename; }
 
-  #if ENABLED(AUTO_REPORT_SD_STATUS)
-    void auto_report_sd_status(void);
-    FORCE_INLINE void set_auto_report_interval(uint8_t v) {
-      NOMORE(v, 60);
-      auto_report_sd_interval = v;
-      next_sd_report_ms = millis() + 1000UL * v;
-    }
-  #endif
-
+public:
   bool saving, logging, sdprinting, cardOK, filenameIsDir;
   char filename[FILENAME_LENGTH], longFilename[LONG_FILENAME_LENGTH];
   int autostart_index;
-
 private:
   SdFile root, *curDir, workDir, workDirParents[MAX_DIR_DEPTH];
   uint8_t workDirDepth;
@@ -184,11 +169,6 @@ private:
 
   #if ENABLED(SDCARD_SORT_ALPHA)
     void flush_presort();
-  #endif
-
-  #if ENABLED(AUTO_REPORT_SD_STATUS)
-    static uint8_t auto_report_sd_interval;
-    static millis_t next_sd_report_ms;
   #endif
 };
 

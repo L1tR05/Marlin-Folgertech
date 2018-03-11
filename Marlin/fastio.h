@@ -29,17 +29,15 @@
 #ifndef _FASTIO_ARDUINO_H
 #define _FASTIO_ARDUINO_H
 
-#include <stdint.h>
-
-typedef int8_t pin_t;
-
 #include <avr/io.h>
+#include "macros.h"
 
 #define AVR_AT90USB1286_FAMILY (defined(__AVR_AT90USB1287__) || defined(__AVR_AT90USB1286__) || defined(__AVR_AT90USB1286P__) || defined(__AVR_AT90USB646__) || defined(__AVR_AT90USB646P__)  || defined(__AVR_AT90USB647__))
 #define AVR_ATmega1284_FAMILY (defined(__AVR_ATmega644__) || defined(__AVR_ATmega644P__) || defined(__AVR_ATmega644PA__) || defined(__AVR_ATmega1284P__))
 #define AVR_ATmega2560_FAMILY (defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__))
 #define AVR_ATmega2561_FAMILY (defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2561__))
 #define AVR_ATmega328_FAMILY (defined(__AVR_ATmega168__) || defined(__AVR_ATmega328__) || defined(__AVR_ATmega328p__))
+
 
 /**
  * Include Ports and Functions
@@ -58,7 +56,9 @@ typedef int8_t pin_t;
   #error "Pins for this chip not defined in Arduino.h! If you have a working pins definition, please contribute!"
 #endif
 
-#include "macros.h"
+#ifndef _BV
+  #define _BV(PIN) (1UL << PIN)
+#endif
 
 /**
  * Magic I/O routines
@@ -117,7 +117,7 @@ typedef int8_t pin_t;
  */
 
 // Waveform Generation Modes
-enum WaveGenMode : char {
+typedef enum {
   WGM_NORMAL,          //  0
   WGM_PWM_PC_8,        //  1
   WGM_PWM_PC_9,        //  2
@@ -134,18 +134,18 @@ enum WaveGenMode : char {
   WGM_reserved,        // 13
   WGM_FAST_PWM_ICRn,   // 14  COM OCnA
   WGM_FAST_PWM_OCRnA   // 15  COM OCnA
-};
+} WaveGenMode;
 
 // Compare Modes
-enum CompareMode : char {
+typedef enum {
   COM_NORMAL,          //  0
   COM_TOGGLE,          //  1  Non-PWM: OCnx ... Both PWM (WGM 9,11,14,15): OCnA only ... else NORMAL
   COM_CLEAR_SET,       //  2  Non-PWM: OCnx ... Fast PWM: OCnx/Bottom ... PF-FC: OCnx Up/Down
   COM_SET_CLEAR        //  3  Non-PWM: OCnx ... Fast PWM: OCnx/Bottom ... PF-FC: OCnx Up/Down
-};
+} CompareMode;
 
 // Clock Sources
-enum ClockSource : char {
+typedef enum {
   CS_NONE,             //  0
   CS_PRESCALER_1,      //  1
   CS_PRESCALER_8,      //  2
@@ -154,10 +154,10 @@ enum ClockSource : char {
   CS_PRESCALER_1024,   //  5
   CS_EXT_FALLING,      //  6
   CS_EXT_RISING        //  7
-};
+} ClockSource;
 
 // Clock Sources (Timer 2 only)
-enum ClockSource2 : char {
+typedef enum {
   CS2_NONE,            //  0
   CS2_PRESCALER_1,     //  1
   CS2_PRESCALER_8,     //  2
@@ -166,7 +166,7 @@ enum ClockSource2 : char {
   CS2_PRESCALER_128,   //  5
   CS2_PRESCALER_256,   //  6
   CS2_PRESCALER_1024   //  7
-};
+} ClockSource2;
 
 // Get interrupt bits in an orderly way
 #define GET_WGM(T)   (((TCCR##T##A >> WGM##T##0) & 0x3) | ((TCCR##T##B >> WGM##T##2 << 2) & 0xC))

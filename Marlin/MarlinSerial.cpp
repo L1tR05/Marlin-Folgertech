@@ -34,7 +34,7 @@
 
 #include "MarlinConfig.h"
 
-#if !(defined(__AVR__) && defined(USBCON)) && (defined(UBRRH) || defined(UBRR0H) || defined(UBRR1H) || defined(UBRR2H) || defined(UBRR3H))
+#if !defined(USBCON) && (defined(UBRRH) || defined(UBRR0H) || defined(UBRR1H) || defined(UBRR2H) || defined(UBRR3H))
 
   #include "MarlinSerial.h"
   #include "Marlin.h"
@@ -68,8 +68,6 @@
     uint8_t xon_xoff_state = XON_XOFF_CHAR_SENT | XON_CHAR;
   #endif
 
-  void clear_command_queue();
-
   #if ENABLED(SERIAL_STATS_DROPPED_RX)
     uint8_t rx_dropped_bytes = 0;
   #endif
@@ -79,8 +77,6 @@
   #endif
 
   #if ENABLED(EMERGENCY_PARSER)
-
-    bool killed_by_M112; // = false
 
     #include "stepper.h"
     #include "language.h"
@@ -157,7 +153,7 @@
                 wait_for_user = wait_for_heatup = false;
                 break;
               case state_M112:
-                killed_by_M112 = true;
+                kill(PSTR(MSG_KILLED));
                 break;
               case state_M410:
                 quickstop_stepper();
@@ -389,8 +385,7 @@
     // reading rx_buffer_head and updating rx_buffer_tail, the previous rx_buffer_head
     // may be written to rx_buffer_tail, making the buffer appear full rather than empty.
     CRITICAL_SECTION_START;
-      rx_buffer.head = rx_buffer.tail = 0;
-      clear_command_queue();
+      rx_buffer.head = rx_buffer.tail;
     CRITICAL_SECTION_END;
 
     #if ENABLED(SERIAL_XON_XOFF)
@@ -651,9 +646,9 @@
   // Preinstantiate
   MarlinSerial customizedSerial;
 
-#endif // !(__AVR__ && USBCON) && (UBRRH || UBRR0H || UBRR1H || UBRR2H || UBRR3H)
+#endif // !USBCON && (UBRRH || UBRR0H || UBRR1H || UBRR2H || UBRR3H)
 
 // For AT90USB targets use the UART for BT interfacing
-#if defined(__AVR__) && defined(USBCON) && ENABLED(BLUETOOTH)
+#if defined(USBCON) && ENABLED(BLUETOOTH)
   HardwareSerial bluetoothSerial;
 #endif

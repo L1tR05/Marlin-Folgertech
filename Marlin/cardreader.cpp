@@ -29,7 +29,6 @@
 #include "ultralcd.h"
 #include "stepper.h"
 #include "language.h"
-#include "printcounter.h"
 
 #define LONGEST_FILENAME (longFilename[0] ? longFilename : filename)
 
@@ -283,32 +282,22 @@ void CardReader::openAndPrintFile(const char *name) {
   char cmd[4 + strlen(name) + 1]; // Room for "M23 ", filename, and null
   sprintf_P(cmd, PSTR("M23 %s"), name);
   for (char *c = &cmd[4]; *c; c++) *c = tolower(*c);
-  enqueue_and_echo_command_now(cmd);
+  enqueue_and_echo_command(cmd);
   enqueue_and_echo_commands_P(PSTR("M24"));
 }
 
 void CardReader::startFileprint() {
   if (cardOK) {
     sdprinting = true;
-    #if SD_RESORT
+    #if ENABLED(SDCARD_SORT_ALPHA)
       flush_presort();
     #endif
   }
 }
 
-void CardReader::stopSDPrint(
-  #if SD_RESORT
-    const bool re_sort/*=false*/
-  #endif
-) {
-  #if ENABLED(ADVANCED_PAUSE_FEATURE)
-    did_pause_print = 0;
-  #endif
+void CardReader::stopSDPrint() {
   sdprinting = false;
   if (isFileOpen()) file.close();
-  #if SD_RESORT
-    if (re_sort) presort();
-  #endif
 }
 
 void CardReader::openLogFile(char* name) {
@@ -346,7 +335,7 @@ void CardReader::openFile(char* name, const bool read, const bool subcall/*=fals
       if (file_subcall_ctr > SD_PROCEDURE_DEPTH - 1) {
         SERIAL_ERROR_START();
         SERIAL_ERRORPGM("trying to call sub-gcode files with too many levels. MAX level is:");
-        SERIAL_ERRORLN((int)SD_PROCEDURE_DEPTH);
+        SERIAL_ERRORLN(SD_PROCEDURE_DEPTH);
         kill(PSTR(MSG_KILLED));
         return;
       }
@@ -671,13 +660,13 @@ int8_t CardReader::updir() {
    */
   void CardReader::presort() {
 
-    // Throw away old sort index
-    flush_presort();
-
     // Sorting may be turned off
     #if ENABLED(SDSORT_GCODE)
       if (!sort_alpha) return;
     #endif
+
+    // Throw away old sort index
+    flush_presort();
 
     // If there are files, sort up to the limit
     uint16_t fileCnt = getnrfilenames();
@@ -911,23 +900,11 @@ void CardReader::printingHasFinished() {
     #if ENABLED(SDCARD_SORT_ALPHA)
       presort();
     #endif
+
     #if ENABLED(SD_REPRINT_LAST_SELECTED_FILE)
       lcd_reselect_last_file();
     #endif
   }
 }
-
-#if ENABLED(AUTO_REPORT_SD_STATUS)
-  uint8_t CardReader::auto_report_sd_interval = 0;
-  millis_t CardReader::next_sd_report_ms;
-
-  void CardReader::auto_report_sd_status() {
-    millis_t current_ms = millis();
-    if (auto_report_sd_interval && ELAPSED(current_ms, next_sd_report_ms)) {
-      next_sd_report_ms = current_ms + 1000UL * auto_report_sd_interval;
-      getStatus();
-    }
-  }
-#endif // AUTO_REPORT_SD_STATUS
 
 #endif // SDSUPPORT
